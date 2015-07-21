@@ -188,7 +188,7 @@ describe('ansi-stream', function() {
       ['abc']
     );
     setup(5);
-    // just give up.
+    // just give up when it gets too long.
     stream.write('abc\x1baaaaa');
     assert.deepEqual(
       log.chunks,
