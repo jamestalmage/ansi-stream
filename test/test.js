@@ -51,6 +51,12 @@ describe('ansi-stream', function() {
 
   it('escape code as last character', function() {
     stream.write('abc\x1b[31m');
+    assert.deepEqual(
+      log.chunks,
+      [
+        'abc'
+      ]
+    );
     stream.end();
     assert.deepEqual(
       log.chunks,
@@ -169,24 +175,24 @@ describe('ansi-stream', function() {
     );
   });
 
-  xit('you can set buffer shorter', function() {
-    stream.write('abc\x1b[38;2');
+  it('you can set a short buffer', function() {
+    stream.write('abc\x1baaaaa');
     assert.deepEqual(
       log.chunks,
       ['abc']
     );
     setup(6);
-    stream.write('abc\x1b[38;2');
+    stream.write('abc\x1baaaaa');
     assert.deepEqual(
       log.chunks,
       ['abc']
     );
     setup(5);
-    stream.write('abc\x1b[38;2');
+    // just give up.
+    stream.write('abc\x1baaaaa');
     assert.deepEqual(
       log.chunks,
-      ['abc\x1b[38;2']
+      ['abc\x1baaaaa']
     );
-
   });
 });

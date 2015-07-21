@@ -13,20 +13,7 @@ module.exports = function(maxBuffer) {
       if (!decoder) {
         decoder = new StringDecoder(enc);
       }
-      prev = run(prev + decoder.write(chunk), this, true);
-      if (prev) {
-        var start = Math.max(0, prev.length - maxBuffer);
-        var p1 = prev.indexOf('\u001b', start);
-        var p2 = prev.indexOf('\u009b', start);
-        var p = Math.max(p1, p2);
-        if (p < 0) {
-          this.push(prev);
-          prev = '';
-        } else if (p > 0) {
-          this.push(prev.substring(0, p));
-          prev = prev.substring(p);
-        }
-      }
+      prev = run(prev + decoder.write(chunk), this, true, maxBuffer);
       cb();
     },
     function(cb) {
@@ -41,7 +28,7 @@ module.exports = function(maxBuffer) {
   );
 };
 
-function run(str, obj, moreAvailable) {
+function run(str, obj, moreAvailable, maxBuffer) {
   var r = regex();
   var lastIndex = 0;
   var match;
@@ -51,17 +38,34 @@ function run(str, obj, moreAvailable) {
     if (nextIndex !== lastIndex) {
       obj.push(str.substring(lastIndex, nextIndex));
     }
-    nextIndex += match[0].length;
+    var m0 = match[0];
+    nextIndex += m0.length;
 
     if (moreAvailable && nextIndex === str.length) {
-      return match[0];
+      return m0;
     }
 
-    obj.push(new EscapeCode(match[0]));
+    obj.push(new EscapeCode(m0));
 
     lastIndex = nextIndex;
   }
 
-  return str.substr(lastIndex);
+  return finalizeRemainder(str.substr(lastIndex), obj, maxBuffer);
 }
 
+function finalizeRemainder(prev, obj, maxBuffer) {
+  if (prev) {
+    var start = Math.max(0, prev.length - maxBuffer);
+    var p1 = prev.indexOf('\u001b', start);
+    var p2 = prev.indexOf('\u009b', start);
+    var p = Math.max(p1, p2);
+    if (p < 0) {
+      obj.push(prev);
+      prev = '';
+    } else if (p > 0) {
+      obj.push(prev.substring(0, p));
+      prev = prev.substring(p);
+    }
+  }
+  return prev;
+}
