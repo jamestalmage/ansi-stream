@@ -4,26 +4,31 @@ var through2 = require('through2');
 var StringDecoder = require('string_decoder').StringDecoder;
 var EscapeCode = require('escape-code');
 
-module.exports = function(maxBuffer) {
+module.exports = createStream;
+module.exports.EscapeCode = EscapeCode;
+
+function createStream(maxBuffer) {
   maxBuffer = typeof maxBuffer === 'number' ? maxBuffer : 25;
-  var as = new AnsiStream();
-  as._maxBuffer = maxBuffer;
-  as._prev = '';
-  return as;
-};
+  var ansiStream = new AnsiStream();
+  ansiStream._maxBuffer = maxBuffer;
+  ansiStream._prev = '';
+  return ansiStream;
+}
 
 var AnsiStream = through2.ctor(
   {objectMode:true},
+
   function handleChunk(chunk, enc, cb) {
     var decoder = this._stringDecoder ||
       (this._stringDecoder = new StringDecoder(enc));
     this._prev = this._consumeString(this._prev + decoder.write(chunk), true);
     cb();
   },
+
   function handleEndOfStream(cb) {
     var prev = this._prev;
     if (prev) {
-      prev = this._consumeString(prev);
+      prev = this._consumeString(prev, false);
       if (prev) {
         this.push(prev);
       }
@@ -34,6 +39,17 @@ var AnsiStream = through2.ctor(
 
 var asp = AnsiStream.prototype;
 
+/**
+ * Consume as much of the current chunk as possible
+ *
+ * @param str the current chunk (concatenated with the remainder of the previous chunk if it exists)
+ *
+ * @param moreAvailable `true` if there are (potentially) more chunks coming,
+ *          will be called once with `false at the end of the stream.
+ *
+ * @returns {string} the remaining unconsumed chunk.
+ *            It will always be an empty string if `maxBuffer` is `0`.
+ */
 asp._consumeString = function consumeString(str, moreAvailable) {
   var r = regex();
   var lastIndex = 0;

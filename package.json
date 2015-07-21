@@ -1,7 +1,7 @@
 {
   "name": "ansi-stream",
   "version": "0.0.0",
-  "description": "My world-class module",
+  "description": "Converts a text stream to a stream of strings and `EscapeCode` objects",
   "license": "MIT",
   "repository": "jamestalmage/ansi-stream",
   "author": {

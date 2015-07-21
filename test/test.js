@@ -195,4 +195,26 @@ describe('ansi-stream', function() {
       ['abc\x1baaaaa']
     );
   });
+
+  it('readable', function() {
+    stream = ansiStream();
+    stream.write('\x1b[31mabc\x1b[39m');
+    stream.end();
+    assert.deepEqual(
+      stream.read(),
+      new EscapeCode('\x1b[31m')
+    );
+    assert.strictEqual(
+      stream.read(),
+      'abc'
+    );
+    assert.deepEqual(
+      stream.read(),
+      new EscapeCode('\x1b[39m')
+    );
+  });
+
+  it('exposes EscapeCode', function() {
+    assert.strictEqual(EscapeCode, ansiStream.EscapeCode);
+  });
 });
