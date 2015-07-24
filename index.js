@@ -19,25 +19,41 @@ var AnsiStream = through2.ctor(
   {objectMode:true},
 
   function handleChunk(chunk, enc, cb) {
-    var decoder = this._stringDecoder ||
-      (this._stringDecoder = new StringDecoder(enc));
-    this._prev = this._consumeString(this._prev + decoder.write(chunk), true);
+    var str;
+    if (typeof chunk === 'string' || chunk instanceof String) {
+      str = chunk;
+    } else if (chunk instanceof Buffer) {
+      var decoder = this._stringDecoder ||
+        (this._stringDecoder = new StringDecoder());
+      str = decoder.write(chunk);
+    } else {
+      this._emptyBuffer();
+      this.push(chunk);
+      cb();
+      return;
+    }
+    this._prev = this._consumeString(this._prev + str, true);
     cb();
   },
 
   function handleEndOfStream(cb) {
-    var prev = this._prev;
-    if (prev) {
-      prev = this._consumeString(prev, false);
-      if (prev) {
-        this.push(prev);
-      }
-    }
+    this._emptyBuffer();
     cb();
   }
 );
 
 var asp = AnsiStream.prototype;
+
+asp._emptyBuffer = function emptyBuffer() {
+  var prev = this._prev;
+  if (prev) {
+    prev = this._consumeString(prev, false);
+    if (prev) {
+      this.push(prev);
+    }
+  }
+  this._prev = '';
+};
 
 /**
  * Consume as much of the current chunk as possible

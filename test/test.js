@@ -217,4 +217,20 @@ describe('ansi-stream', function() {
   it('exposes EscapeCode', function() {
     assert.strictEqual(EscapeCode, ansiStream.EscapeCode);
   });
+
+  it('takes Buffer input, passes through other stuff', function() {
+    setup();
+    stream.write(new Buffer('\x1b[31mabc\x1b[39m', 'utf8'));
+    stream.write({a: 'b'});
+    stream.end();
+    assert.deepEqual(
+      log.chunks,
+      [
+        new EscapeCode('\x1b[31m'),
+        'abc',
+        new EscapeCode('\x1b[39m'),
+        {a: 'b'}
+      ]
+    );
+  });
 });
